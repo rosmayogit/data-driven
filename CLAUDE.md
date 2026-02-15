@@ -4,21 +4,31 @@ This file provides guidance for AI assistants working with the **data-driven** r
 
 ## Project Overview
 
-A playground project for exploring data-driven approaches. The repository is in its early stages with no established tech stack, build system, or source code yet.
+Data analysis project for a **promotions engine** in a betting platform. Uses Python to generate synthetic data and SQL (Databricks) for analysis. Focus areas: funnel analysis, cohort analysis, and promo vs non-promo user comparisons.
 
 ## Repository Structure
 
 ```
 data-driven/
-├── README.md       # Project description
-└── CLAUDE.md       # This file — AI assistant guidance
+├── README.md                          # Project description
+├── CLAUDE.md                          # This file — AI assistant guidance
+├── requirements.txt                   # Python dependencies
+├── .gitignore                         # Git ignore rules
+├── scripts/
+│   └── generate_data.py               # Synthetic data generator
+├── analysis/
+│   ├── 00_load_data.sql               # Load CSVs into Databricks tables
+│   ├── 01_funnel_analysis.sql         # Promotion funnel conversion
+│   ├── 02_cohort_analysis.sql         # Weekly participation cohorts
+│   └── 03_promo_vs_no_promo.sql       # Promo users vs non-promo comparison
+└── data/                              # Generated CSVs (gitignored)
 ```
 
-## Current State
+## Tech Stack
 
-- **Single commit** on `master` branch with an initial README
-- No source code, configuration files, or dependencies have been added yet
-- No tech stack has been chosen
+- **Python 3.10+** with pandas, numpy, faker for data generation
+- **SQL (Databricks)** for analysis queries
+- Data stored as CSV, loaded into Databricks tables
 
 ## Development Guidelines
 
@@ -45,13 +55,9 @@ Since this project is in its initial phase, follow these principles when contrib
 
 ## Commands
 
-No build, test, or lint commands are configured yet. Update this section as tooling is added.
-
-<!-- Example format for when commands are established:
 ```
-npm install          # Install dependencies
-npm run build        # Build the project
-npm test             # Run tests
-npm run lint         # Run linter
+pip install -r requirements.txt                  # Install dependencies
+python scripts/generate_data.py                  # Generate synthetic data (default: 2000 users, 12 weeks)
+python scripts/generate_data.py --users 10000    # Generate with more users
+python scripts/generate_data.py --weeks 26       # Generate with more weeks
 ```
--->
