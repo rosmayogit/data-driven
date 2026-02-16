@@ -14,8 +14,10 @@ data-driven/
 ├── CLAUDE.md                          # This file — AI assistant guidance
 ├── requirements.txt                   # Python dependencies
 ├── .gitignore                         # Git ignore rules
+├── notebooks/
+│   └── 00_generate_data.py            # Databricks notebook: generate data + create tables
 ├── scripts/
-│   └── generate_data.py               # Synthetic data generator
+│   └── generate_data.py               # Standalone data generator (local use)
 ├── analysis/
 │   ├── 00_load_data.sql               # Load CSVs into Databricks tables
 │   ├── 01_funnel_analysis.sql         # Promotion funnel conversion

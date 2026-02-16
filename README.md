@@ -12,20 +12,20 @@ bets               → Historial de apuestas (orgánicas + promo)
 daily_activity     → Actividad diaria por usuario (activo, stake, productos)
 ```
 
-## Quick start
+## Quick start (Databricks)
+
+1. Conecta este repo a tu workspace de Databricks (Repos > Add Repo)
+2. Abre `notebooks/00_generate_data.py` y ejecuta las celdas en orden
+3. Las 5 tablas se crean automáticamente en Spark
+4. Abre las queries de `analysis/` y ejecútalas
+
+### Alternativa: ejecución local
 
 ```bash
-# Instalar dependencias
 pip install -r requirements.txt
-
-# Generar datos sintéticos (2000 usuarios, 12 semanas)
-python scripts/generate_data.py
-
-# Opciones: más usuarios o más semanas
-python scripts/generate_data.py --users 10000 --weeks 26
+python scripts/generate_data.py                  # 2000 usuarios, 12 semanas
+python scripts/generate_data.py --users 10000    # más usuarios
 ```
-
-Los CSVs se generan en `data/`. Súbelos a Databricks y usa `analysis/00_load_data.sql` para crear las tablas.
 
 ## Queries de análisis
 
