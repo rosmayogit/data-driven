@@ -12,8 +12,8 @@ venv/
 env/
 
 # Data files (generated locally)
-data/**/*.csv
-data/**/*.parquet
+data/*.csv
+data/*.parquet
 
 # Environment variables
 .env
