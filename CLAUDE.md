@@ -20,7 +20,8 @@ data-driven/
 │   ├── 00_load_data.sql               # Load CSVs into Databricks tables
 │   ├── 01_funnel_analysis.sql         # Promotion funnel conversion
 │   ├── 02_cohort_analysis.sql         # Weekly participation cohorts
-│   └── 03_promo_vs_no_promo.sql       # Promo users vs non-promo comparison
+│   ├── 03_promo_vs_no_promo.sql       # Promo users vs non-promo comparison
+│   └── 04_temp_tables_tutorial.sql    # Tutorial: creating temp views step by step
 └── data/                              # Generated CSVs (gitignored)
 ```
 

@@ -35,6 +35,7 @@ Los CSVs se generan en `data/`. Súbelos a Databricks y usa `analysis/00_load_da
 | `analysis/01_funnel_analysis.sql` | Funnel de conversión por tipo de promo y segmento |
 | `analysis/02_cohort_analysis.sql` | Cohortes semanales y matriz de retención |
 | `analysis/03_promo_vs_no_promo.sql` | Comparativa promo users vs no-promo: active days, stake, retención, productos |
+| `analysis/04_temp_tables_tutorial.sql` | Tutorial paso a paso: crear temp views combinando tablas |
 
 ## Métricas clave
 
