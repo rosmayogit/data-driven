@@ -36,7 +36,12 @@ N_USERS = 2000       # número de usuarios
 N_WEEKS = 12         # semanas de datos
 START_DATE = datetime(2025, 10, 1)
 
+# Catálogo y schema donde se guardarán las tablas en Unity Catalog
+# ⚠️ CAMBIA esto por tu catálogo.schema (ej: "dev.promotions", "analytics.betting")
+CATALOG_SCHEMA = "main.default"
+
 print(f"Configuración: {N_USERS} usuarios, {N_WEEKS} semanas desde {START_DATE.date()}")
+print(f"Tablas se guardarán en: {CATALOG_SCHEMA}")
 
 # COMMAND ----------
 
@@ -317,22 +322,23 @@ print(f"  Daily activity: {len(daily_pdf):,} filas")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 6. Crear tablas en Spark
+# MAGIC ## 6. Crear tablas en el catálogo
 # MAGIC
-# MAGIC Convierte los DataFrames de pandas a Spark y los registra como tablas
-# MAGIC temporales. Después puedes usarlas desde cualquier celda SQL.
+# MAGIC Guarda los DataFrames como tablas Delta permanentes en Unity Catalog
+# MAGIC y también las registra como vistas temporales para este notebook.
 
 # COMMAND ----------
 
-# Convertir pandas → Spark y registrar como tablas temporales
 for name, pdf in [("users", users_pdf), ("promotions", promos_pdf),
                    ("funnel", funnel_pdf), ("bets", bets_pdf),
                    ("daily_activity", daily_pdf)]:
     sdf = spark.createDataFrame(pdf)
+    full_name = f"{CATALOG_SCHEMA}.{name}"
+    sdf.write.mode("overwrite").saveAsTable(full_name)
     sdf.createOrReplaceTempView(name)
-    print(f"  Tabla '{name}' creada: {sdf.count():,} filas")
+    print(f"  Tabla '{full_name}' creada: {sdf.count():,} filas")
 
-print("\n¡Listo! Ya puedes usar las tablas en celdas SQL con: SELECT * FROM users")
+print(f"\n¡Listo! Tablas guardadas en '{CATALOG_SCHEMA}' y disponibles como vistas temporales.")
 
 # COMMAND ----------
 
