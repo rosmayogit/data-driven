@@ -12,6 +12,7 @@ Usage:
     python backend/app.py
 """
 
+import json
 import os
 from datetime import datetime, timedelta
 
@@ -238,6 +239,10 @@ def dashboard():
 def campaigns():
     """All campaigns with stats."""
     all_campaigns = _build_campaign_stats()
+
+    # Include custom campaigns
+    custom = _load_custom_campaigns()
+    all_campaigns = custom + all_campaigns
 
     # Apply filters
     status = request.args.get("status", "all")
@@ -501,6 +506,73 @@ def users():
     # Sort by lifetime value descending, limit to 100
     result.sort(key=lambda u: u["totalIssued"], reverse=True)
     return jsonify(result[:100])
+
+
+CUSTOM_CAMPAIGNS_FILE = os.path.join(BASE_DIR, "data", "custom_campaigns.json")
+
+
+def _load_custom_campaigns():
+    """Load manually created campaigns from JSON file."""
+    if os.path.exists(CUSTOM_CAMPAIGNS_FILE):
+        with open(CUSTOM_CAMPAIGNS_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+
+def _save_custom_campaigns(campaigns):
+    """Save custom campaigns to JSON file."""
+    os.makedirs(os.path.dirname(CUSTOM_CAMPAIGNS_FILE), exist_ok=True)
+    with open(CUSTOM_CAMPAIGNS_FILE, "w") as f:
+        json.dump(campaigns, f, indent=2, default=str)
+
+
+@app.route("/api/campaigns", methods=["POST"])
+def create_campaign():
+    """Create a new campaign from the wizard."""
+    body = request.get_json()
+    if not body:
+        return jsonify({"error": "No data provided"}), 400
+
+    custom = _load_custom_campaigns()
+    next_id = len(custom) + 10000  # Avoid collision with generated IDs
+
+    # Map reward types from wizard format to display format
+    reward_type_map = {
+        "free-bet": "FreeBet",
+        "free-spins": "FreeSpin",
+        "cash": "Cash",
+        "bonus-wallet": "CasinoBonus",
+    }
+    selected_rewards = body.get("selectedRewards", [])
+    display_type = reward_type_map.get(
+        selected_rewards[0] if selected_rewards else "free-bet", "FreeBet"
+    )
+
+    general = body.get("generalConfig", {})
+    campaign = {
+        "id": f"RW-{next_id:04d}",
+        "name": general.get("name", "Untitled Campaign"),
+        "description": general.get("description", ""),
+        "type": display_type,
+        "status": "Active",
+        "amount": {"mode": "Fixed", "value": "N/A"},
+        "issued": 0,
+        "redeemed": 0,
+        "active": 0,
+        "expired": 0,
+        "redemptionRate": 0.0,
+        "roi": 0.0,
+        "createdAt": datetime.utcnow().strftime("%Y-%m-%d"),
+        "country": body.get("country", ""),
+        "campaignType": body.get("campaignType", "simple"),
+        "requiresOptIn": general.get("requiresOptIn", False),
+        "wizardData": body,
+    }
+
+    custom.append(campaign)
+    _save_custom_campaigns(custom)
+
+    return jsonify(campaign), 201
 
 
 @app.route("/api/reload", methods=["POST"])
