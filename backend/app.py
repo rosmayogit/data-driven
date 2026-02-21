@@ -434,5 +434,5 @@ if __name__ == "__main__":
     print(f"BonusEngine directory: {BE_DIR}")
     for name, df in DATA.items():
         print(f"  {name}: {len(df)} rows")
-    print("\nStarting API on http://localhost:5000")
-    app.run(debug=True, port=5000)
+    print("\nStarting API on http://localhost:5001")
+    app.run(debug=True, port=5001)
