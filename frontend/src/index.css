@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 224 71% 4%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 224 71% 4%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 224 71% 4%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 220 14% 96%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 12%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 220 14% 12%;
+    --sidebar-ring: 239 84% 67%;
+
+    --chart-1: 239 84% 67%;
+    --chart-2: 142 76% 36%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 0 84% 60%;
+    --chart-5: 280 65% 60%;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 220 14% 96%;
+
+    --card: 220 13% 8%;
+    --card-foreground: 220 14% 96%;
+
+    --popover: 220 13% 8%;
+    --popover-foreground: 220 14% 96%;
+
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 12%;
+    --secondary-foreground: 220 14% 96%;
+
+    --muted: 220 14% 12%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 14% 12%;
+    --accent-foreground: 220 14% 96%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 12%;
+    --input: 220 14% 12%;
+    --ring: 239 84% 67%;
+
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 220 14% 96%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 12%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 220 14% 12%;
+    --sidebar-ring: 239 84% 67%;
+
+    --chart-1: 239 84% 67%;
+    --chart-2: 142 76% 36%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 0 84% 60%;
+    --chart-5: 280 65% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+ 
+ /* Campaign Wizard Selection Cards */
+ @layer components {
+   .selection-card {
+     @apply flex flex-col items-center gap-2 rounded-lg border p-4 transition-all hover:border-primary cursor-pointer;
+   }
+ 
+   .selection-card-selected {
+     @apply border-primary bg-primary/5 ring-2 ring-primary ring-offset-2;
+   }
+ 
+   .selection-card-disabled {
+     @apply opacity-50 cursor-not-allowed hover:border-border;
+   }
+ }
