@@ -190,6 +190,11 @@ def _build_campaign_stats():
 def dashboard():
     """Dashboard metrics and top campaigns."""
     campaigns = _build_campaign_stats()
+
+    # Include custom campaigns in metrics
+    custom = _load_custom_campaigns()
+    campaigns = custom + campaigns
+
     redeem = DATA["reward_redeem"]
 
     active_count = sum(1 for c in campaigns if c["status"] == "Active")
