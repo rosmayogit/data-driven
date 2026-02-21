@@ -17,14 +17,18 @@ data-driven/
 ├── notebooks/
 │   └── 00_generate_data.py            # Databricks notebook: generate data + create tables
 ├── scripts/
-│   └── generate_data.py               # Standalone data generator (local use)
+│   ├── generate_data.py               # Standalone data generator (local use)
+│   └── generate_bonusengine_data.py   # BonusEngine schema data generator
 ├── analysis/
 │   ├── 00_load_data.sql               # Load CSVs into Databricks tables
 │   ├── 01_funnel_analysis.sql         # Promotion funnel conversion
 │   ├── 02_cohort_analysis.sql         # Weekly participation cohorts
 │   ├── 03_promo_vs_no_promo.sql       # Promo users vs non-promo comparison
-│   └── 04_temp_tables_tutorial.sql    # Tutorial: creating temp views step by step
+│   ├── 04_temp_tables_tutorial.sql    # Tutorial: creating temp views step by step
+│   └── bonusengine/
+│       └── 00_load_bonusengine_data.sql  # Load BonusEngine CSVs
 └── data/                              # Generated CSVs (gitignored)
+    └── bonusengine/                   # BonusEngine CSVs (gitignored)
 ```
 
 ## Tech Stack
@@ -59,8 +63,11 @@ Since this project is in its initial phase, follow these principles when contrib
 ## Commands
 
 ```
-pip install -r requirements.txt                  # Install dependencies
-python scripts/generate_data.py                  # Generate synthetic data (default: 2000 users, 12 weeks)
-python scripts/generate_data.py --users 10000    # Generate with more users
-python scripts/generate_data.py --weeks 26       # Generate with more weeks
+pip install -r requirements.txt                           # Install dependencies
+python scripts/generate_data.py                           # Generate synthetic data (default: 2000 users, 12 weeks)
+python scripts/generate_data.py --users 10000             # Generate with more users
+python scripts/generate_data.py --weeks 26                # Generate with more weeks
+python scripts/generate_bonusengine_data.py               # Generate BonusEngine data (default: 2000 users, 6 months)
+python scripts/generate_bonusengine_data.py --users 5000  # Generate with more users
+python scripts/generate_bonusengine_data.py --months 12   # Generate with more months
 ```
