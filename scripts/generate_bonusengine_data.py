@@ -302,15 +302,42 @@ def _promotion_instances(tmpl, month, month_start):
 def generate_promotion_user(
     promos_df: pd.DataFrame, n_users: int
 ) -> pd.DataFrame:
-    """Generate user participation records per promotion."""
+    """Generate user participation records per promotion.
+
+    Users are assigned an affinity profile that controls how likely they
+    are to appear in any given promotion, creating realistic cohorts:
+      - ~15% of users never participate (affinity = 0)
+      - ~25% participate in very few promos (affinity low)
+      - ~35% are moderate participants
+      - ~25% are heavy promo users
+    """
     rows = []
     user_ids = list(range(1, n_users + 1))
     now = datetime(2026, 2, 21)
 
+    # Assign affinity per user (probability of being eligible for any promo)
+    # Using a mixture: some zeros + beta distribution for the rest
+    user_affinity = {}
+    for uid in user_ids:
+        r = random.random()
+        if r < 0.15:
+            # Never participates in promos
+            user_affinity[uid] = 0.0
+        elif r < 0.40:
+            # Low engagement: appears in ~2-8% of promos
+            user_affinity[uid] = np.random.beta(1.2, 15)
+        elif r < 0.75:
+            # Moderate: appears in ~10-25% of promos
+            user_affinity[uid] = np.random.beta(3, 12)
+        else:
+            # Heavy promo users: appears in ~25-60% of promos
+            user_affinity[uid] = np.random.beta(5, 5)
+
     for _, promo in promos_df.iterrows():
-        # Each promotion reaches 5-25% of users
-        n_eligible = int(n_users * random.uniform(0.05, 0.25))
-        eligible_users = random.sample(user_ids, min(n_eligible, len(user_ids)))
+        # Each user independently decides to be in this promo based on affinity
+        eligible_users = [
+            uid for uid in user_ids if random.random() < user_affinity[uid]
+        ]
 
         promo_start = promo["StartDateUtc"]
         promo_end = promo["EndDateUtc"]
