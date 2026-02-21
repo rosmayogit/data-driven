@@ -10,12 +10,20 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 1. Instalar dependencias y configurar
+# MAGIC ## 1. Instalar dependencias
+# MAGIC
+# MAGIC Ejecuta esta celda primero. El `%pip install` reinicia Python automáticamente.
 
 # COMMAND ----------
 
 # MAGIC %pip install faker
-# MAGIC dbutils.library.restartPython()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 2. Imports y configuración
+# MAGIC
+# MAGIC Esta celda se ejecuta después del reinicio automático de Python.
 
 # COMMAND ----------
 
@@ -36,12 +44,17 @@ N_USERS = 2000       # número de usuarios
 N_WEEKS = 12         # semanas de datos
 START_DATE = datetime(2025, 10, 1)
 
+# Catálogo y schema donde se guardarán las tablas en Unity Catalog
+# ⚠️ CAMBIA esto por tu catálogo.schema (ej: "dev.promotions", "analytics.betting")
+CATALOG_SCHEMA = "main.default"
+
 print(f"Configuración: {N_USERS} usuarios, {N_WEEKS} semanas desde {START_DATE.date()}")
+print(f"Tablas se guardarán en: {CATALOG_SCHEMA}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 2. Definir constantes del modelo
+# MAGIC ## 3. Definir constantes del modelo
 
 # COMMAND ----------
 
@@ -61,7 +74,7 @@ COUNTRIES = ["ES", "MX", "CO", "AR", "PE", "CL"]
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3. Generar tabla de USERS
+# MAGIC ## 4. Generar tabla de USERS
 
 # COMMAND ----------
 
@@ -84,7 +97,7 @@ users_pdf.head(10)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 4. Generar tabla de PROMOTIONS
+# MAGIC ## 5. Generar tabla de PROMOTIONS
 
 # COMMAND ----------
 
@@ -135,7 +148,7 @@ promos_pdf.head(10)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 5. Generar FUNNEL, BETS y DAILY_ACTIVITY
+# MAGIC ## 6. Generar FUNNEL, BETS y DAILY_ACTIVITY
 # MAGIC
 # MAGIC Esta es la celda más pesada — genera el funnel completo, las apuestas
 # MAGIC y la actividad diaria. Con 2000 usuarios tarda ~2-3 minutos.
@@ -317,27 +330,28 @@ print(f"  Daily activity: {len(daily_pdf):,} filas")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 6. Crear tablas en Spark
+# MAGIC ## 7. Crear tablas en el catálogo
 # MAGIC
-# MAGIC Convierte los DataFrames de pandas a Spark y los registra como tablas
-# MAGIC temporales. Después puedes usarlas desde cualquier celda SQL.
+# MAGIC Guarda los DataFrames como tablas Delta permanentes en Unity Catalog
+# MAGIC y también las registra como vistas temporales para este notebook.
 
 # COMMAND ----------
 
-# Convertir pandas → Spark y registrar como tablas temporales
 for name, pdf in [("users", users_pdf), ("promotions", promos_pdf),
                    ("funnel", funnel_pdf), ("bets", bets_pdf),
                    ("daily_activity", daily_pdf)]:
     sdf = spark.createDataFrame(pdf)
+    full_name = f"{CATALOG_SCHEMA}.{name}"
+    sdf.write.mode("overwrite").saveAsTable(full_name)
     sdf.createOrReplaceTempView(name)
-    print(f"  Tabla '{name}' creada: {sdf.count():,} filas")
+    print(f"  Tabla '{full_name}' creada: {sdf.count():,} filas")
 
-print("\n¡Listo! Ya puedes usar las tablas en celdas SQL con: SELECT * FROM users")
+print(f"\n¡Listo! Tablas guardadas en '{CATALOG_SCHEMA}' y disponibles como vistas temporales.")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 7. Verificación rápida
+# MAGIC ## 8. Verificación rápida
 
 # COMMAND ----------
 
