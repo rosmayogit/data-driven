@@ -41,10 +41,9 @@ BRANDS = [
 ]
 
 PROMOTION_TEMPLATES = [
-    # --- Weekly Club family (recurring weekly, numbered sequentially) ---
     {
-        "name": "Weekly Club",
-        "desc": "Weekly freebet club – place qualifying bets to earn a freebet",
+        "name": "Freebet Semanal Deportes",
+        "desc": "Apuesta y recibe una freebet semanal",
         "type": "freebet",
         "duration_days": 7,
         "recurrence": "weekly",
@@ -55,8 +54,8 @@ PROMOTION_TEMPLATES = [
         "max_per_user": 1,
     },
     {
-        "name": "Weekly Club Cashback",
-        "desc": "Weekly cashback on weekend bets",
+        "name": "Cashback Fin de Semana",
+        "desc": "Cashback del 10% en apuestas del fin de semana",
         "type": "cashback",
         "duration_days": 3,
         "recurrence": "weekly",
@@ -67,8 +66,8 @@ PROMOTION_TEMPLATES = [
         "max_per_user": 1,
     },
     {
-        "name": "Weekly Club Acca Boost",
-        "desc": "Weekly accumulator boost – extra bonus on combo bets",
+        "name": "Bonus Acumulador",
+        "desc": "Bonus extra en apuestas combinadas",
         "type": "accumulator",
         "duration_days": 7,
         "recurrence": "weekly",
@@ -78,72 +77,9 @@ PROMOTION_TEMPLATES = [
         "max_redemptions": 10000,
         "max_per_user": 3,
     },
-    # --- Welcome Offer family (one-time for new users) ---
     {
-        "name": "Welcome Offer",
-        "desc": "Welcome bonus for new registrations – first bet risk-free",
-        "type": "welcome",
-        "duration_days": 14,
-        "recurrence": "once",
-        "requires_optin": False,
-        "target_bets": 1,
-        "target_stake": 5.0,
-        "max_redemptions": 50000,
-        "max_per_user": 1,
-    },
-    {
-        "name": "Welcome Offer Casino",
-        "desc": "Welcome casino bonus – 100% deposit match for new users",
-        "type": "deposit_bonus",
-        "duration_days": 14,
-        "recurrence": "once",
-        "requires_optin": False,
-        "target_bets": 0,
-        "target_stake": 0.0,
-        "max_redemptions": 50000,
-        "max_per_user": 1,
-    },
-    # --- VIP – High Depositors family (monthly, segmented) ---
-    {
-        "name": "VIP - High Depositors",
-        "desc": "Exclusive monthly freebet for high-value depositors",
-        "type": "freebet",
-        "duration_days": 30,
-        "recurrence": "monthly",
-        "requires_optin": True,
-        "target_bets": 10,
-        "target_stake": 100.0,
-        "max_redemptions": 500,
-        "max_per_user": 1,
-    },
-    {
-        "name": "VIP - High Depositors Cashback",
-        "desc": "Premium monthly cashback for VIP segment",
-        "type": "cashback",
-        "duration_days": 30,
-        "recurrence": "monthly",
-        "requires_optin": True,
-        "target_bets": 15,
-        "target_stake": 200.0,
-        "max_redemptions": 300,
-        "max_per_user": 1,
-    },
-    {
-        "name": "VIP - High Depositors Free Spins",
-        "desc": "Exclusive free spins package for VIP players",
-        "type": "free_spins",
-        "duration_days": 7,
-        "recurrence": "monthly",
-        "requires_optin": True,
-        "target_bets": 0,
-        "target_stake": 0.0,
-        "max_redemptions": 200,
-        "max_per_user": 1,
-    },
-    # --- Other recurring promos ---
-    {
-        "name": "Monthly Challenge",
-        "desc": "Complete the monthly challenge to win prizes",
+        "name": "Reto Mensual Deportes",
+        "desc": "Completa el reto mensual y gana premios",
         "type": "challenge",
         "duration_days": 30,
         "recurrence": "monthly",
@@ -154,8 +90,32 @@ PROMOTION_TEMPLATES = [
         "max_per_user": 1,
     },
     {
-        "name": "Free Spins Slot of the Week",
-        "desc": "50 free spins on the featured slot of the week",
+        "name": "Bienvenida Nuevo Usuario",
+        "desc": "Promocion de bienvenida para nuevos registros",
+        "type": "welcome",
+        "duration_days": 14,
+        "recurrence": "once",
+        "requires_optin": False,
+        "target_bets": 1,
+        "target_stake": 5.0,
+        "max_redemptions": 50000,
+        "max_per_user": 1,
+    },
+    {
+        "name": "Casino Bonus Deposito",
+        "desc": "Bonus del 100% en tu primer deposito casino",
+        "type": "deposit_bonus",
+        "duration_days": 30,
+        "recurrence": "monthly",
+        "requires_optin": True,
+        "target_bets": 0,
+        "target_stake": 0.0,
+        "max_redemptions": 5000,
+        "max_per_user": 1,
+    },
+    {
+        "name": "Tiradas Gratis Slot",
+        "desc": "50 tiradas gratis en la slot de la semana",
         "type": "free_spins",
         "duration_days": 7,
         "recurrence": "weekly",
@@ -166,8 +126,8 @@ PROMOTION_TEMPLATES = [
         "max_per_user": 1,
     },
     {
-        "name": "Champions League Risk-Free",
-        "desc": "Risk-free first bet on Champions League matches",
+        "name": "Apuesta Sin Riesgo Champions",
+        "desc": "Tu primera apuesta en Champions sin riesgo",
         "type": "risk_free",
         "duration_days": 2,
         "recurrence": "event",
@@ -191,7 +151,7 @@ REWARD_NAMES = [
     ("Casino Bonus 10€", 10.0),
     ("Casino Bonus 25€", 25.0),
     ("Casino Bonus 50€", 50.0),
-    ("Free Spins x50", 0.0),
+    ("Tiradas Gratis x50", 0.0),
 ]
 
 FREEBET_TYPES = {
@@ -321,7 +281,7 @@ def _promotion_instances(tmpl, month, month_start):
         for week in range(4):
             s = month_start + timedelta(weeks=week)
             e = s + timedelta(days=tmpl["duration_days"])
-            results.append((s, e, f"W{month * 4 + week + 1}"))
+            results.append((s, e, f"S{month * 4 + week + 1}"))
     elif tmpl["recurrence"] == "monthly":
         s = month_start
         e = s + timedelta(days=tmpl["duration_days"])
