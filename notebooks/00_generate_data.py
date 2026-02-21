@@ -10,12 +10,20 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 1. Instalar dependencias y configurar
+# MAGIC ## 1. Instalar dependencias
+# MAGIC
+# MAGIC Ejecuta esta celda primero. El `%pip install` reinicia Python automáticamente.
 
 # COMMAND ----------
 
 # MAGIC %pip install faker
-# MAGIC dbutils.library.restartPython()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 2. Imports y configuración
+# MAGIC
+# MAGIC Esta celda se ejecuta después del reinicio automático de Python.
 
 # COMMAND ----------
 
@@ -46,7 +54,7 @@ print(f"Tablas se guardarán en: {CATALOG_SCHEMA}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 2. Definir constantes del modelo
+# MAGIC ## 3. Definir constantes del modelo
 
 # COMMAND ----------
 
@@ -66,7 +74,7 @@ COUNTRIES = ["ES", "MX", "CO", "AR", "PE", "CL"]
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3. Generar tabla de USERS
+# MAGIC ## 4. Generar tabla de USERS
 
 # COMMAND ----------
 
@@ -89,7 +97,7 @@ users_pdf.head(10)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 4. Generar tabla de PROMOTIONS
+# MAGIC ## 5. Generar tabla de PROMOTIONS
 
 # COMMAND ----------
 
@@ -140,7 +148,7 @@ promos_pdf.head(10)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 5. Generar FUNNEL, BETS y DAILY_ACTIVITY
+# MAGIC ## 6. Generar FUNNEL, BETS y DAILY_ACTIVITY
 # MAGIC
 # MAGIC Esta es la celda más pesada — genera el funnel completo, las apuestas
 # MAGIC y la actividad diaria. Con 2000 usuarios tarda ~2-3 minutos.
@@ -322,7 +330,7 @@ print(f"  Daily activity: {len(daily_pdf):,} filas")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 6. Crear tablas en el catálogo
+# MAGIC ## 7. Crear tablas en el catálogo
 # MAGIC
 # MAGIC Guarda los DataFrames como tablas Delta permanentes en Unity Catalog
 # MAGIC y también las registra como vistas temporales para este notebook.
@@ -343,7 +351,7 @@ print(f"\n¡Listo! Tablas guardadas en '{CATALOG_SCHEMA}' y disponibles como vis
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 7. Verificación rápida
+# MAGIC ## 8. Verificación rápida
 
 # COMMAND ----------
 
