@@ -256,6 +256,88 @@ def campaigns():
     return jsonify(all_campaigns)
 
 
+@app.route("/api/campaigns/<campaign_id>")
+def campaign_detail(campaign_id):
+    """Single campaign detail with metrics and funnel."""
+    # Extract numeric ID from "RW-0001" format
+    try:
+        pid = int(campaign_id.replace("RW-", ""))
+    except ValueError:
+        return jsonify({"error": "Invalid campaign ID"}), 404
+
+    pd_detail = DATA["promo_detail"]
+    pu = DATA["promo_user"]
+    redeem = DATA["reward_redeem"]
+    fb = DATA["reward_freebet"]
+
+    if pd_detail.empty or pid not in pd_detail["PromotionId"].values:
+        return jsonify({"error": "Campaign not found"}), 404
+
+    promo = pd_detail[pd_detail["PromotionId"] == pid].iloc[0]
+
+    # Get users and redemptions for this promotion
+    promo_users = pu[pu["PromotionId"] == pid] if not pu.empty else pd.DataFrame()
+    promo_redeem = redeem[redeem["PromotionId"] == pid] if not redeem.empty else pd.DataFrame()
+
+    total_assigned = len(promo_users)
+    opted_in = int(promo_users["UserIsOptIn"].sum()) if not promo_users.empty else 0
+    participating = int((promo_users["ConfirmedBetsPlaced"] > 0).sum()) if not promo_users.empty else 0
+    rewarded = len(promo_redeem)
+    redeemed_count = int(promo_redeem["RedeemedOnUtc"].notna().sum()) if not promo_redeem.empty else 0
+
+    # Compute metrics
+    total_stake = float(promo_users["ConfirmedGrossAmountStaked"].sum()) if not promo_users.empty else 0
+    avg_bets = float(promo_users[promo_users["ConfirmedBetsPlaced"] > 0]["ConfirmedBetsPlaced"].mean()) if participating > 0 else 0
+    redemption_rate = round(redeemed_count / rewarded * 100, 1) if rewarded > 0 else 0
+
+    # Get reward type and amount
+    reward_type = _get_reward_type(promo["RewardId"])
+    amount_info = "N/A"
+    if not fb.empty:
+        fb_match = fb[fb["RewardId"] == promo["RewardId"]]
+        if not fb_match.empty:
+            amt = fb_match.iloc[0]["Amount"]
+            amount_info = f"€{amt:.0f}" if amt > 0 else "50 spins"
+
+    # Determine status
+    now = pd.Timestamp.now().tz_localize(None)
+    end_date = promo.get("EndDateUtc")
+    if pd.notna(end_date) and pd.Timestamp(end_date) < now:
+        status = "Archived"
+    elif total_assigned > 0 and (promo_users["PromotionState"] == 1).any():
+        status = "Active"
+    else:
+        status = "Paused"
+
+    return jsonify({
+        "id": campaign_id,
+        "name": str(promo["PromotionName"]),
+        "description": str(promo.get("PromotionDescription", "")),
+        "type": reward_type,
+        "status": status,
+        "amount": amount_info,
+        "startDate": str(promo.get("StartDateUtc", ""))[:10],
+        "endDate": str(promo.get("EndDateUtc", ""))[:10],
+        "metrics": [
+            {"title": "Assigned Users", "value": f"{total_assigned:,}"},
+            {"title": "Opted In", "value": f"{opted_in:,}"},
+            {"title": "Participating", "value": f"{participating:,}"},
+            {"title": "Rewarded", "value": f"{rewarded:,}"},
+            {"title": "Redeemed", "value": f"{redeemed_count:,}"},
+            {"title": "Redemption Rate", "value": f"{redemption_rate}%"},
+            {"title": "Total Stake", "value": f"€{total_stake:,.0f}"},
+            {"title": "Avg Bets/User", "value": f"{avg_bets:.1f}"},
+        ],
+        "funnel": [
+            {"label": "Assigned", "count": total_assigned},
+            {"label": "Opted In", "count": opted_in},
+            {"label": "Participating", "count": participating},
+            {"label": "Rewarded", "count": rewarded},
+            {"label": "Redeemed", "count": redeemed_count},
+        ],
+    })
+
+
 @app.route("/api/analytics")
 def analytics():
     """Issuance trends and redemption by reward type."""
