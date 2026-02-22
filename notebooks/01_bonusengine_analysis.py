@@ -522,7 +522,369 @@ spark.conf.set("END_DATE", END_DATE)
 
 # MAGIC %md
 # MAGIC ---
-# MAGIC ## Resumen de views generadas
+# MAGIC ## ⚙️ Configuración — Tablas externas (bets + users)
+
+# COMMAND ----------
+
+# Tablas externas — ajusta a tu catálogo real
+BETS_TABLE  = "db_silver.bets"    # columnas requeridas: user_id, bet_date, stake, odds, result
+USERS_TABLE = "db_silver.users"   # columnas requeridas: user_id, segment
+
+# Ventana de días para el análisis before/after (S6)
+WINDOW_DAYS = 28
+
+spark.conf.set("BETS_TABLE",  BETS_TABLE)
+spark.conf.set("USERS_TABLE", USERS_TABLE)
+spark.conf.set("WINDOW_DAYS", str(WINDOW_DAYS))
+
+print(f"Bets table  : {BETS_TABLE}")
+print(f"Users table : {USERS_TABLE}")
+print(f"Ventana B/A : ±{WINDOW_DAYS} días")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC ## Sección 4 — ARPU mensual: participantes vs mismo segmento
+# MAGIC
+# MAGIC Compara el ARPU (GGR / usuario activo) entre:
+# MAGIC - **Participantes**: usuarios que cualificaron en alguna campaña semanal (de S3)
+# MAGIC - **Control**: usuarios del **mismo segmento** que nunca cualificaron en una campaña semanal
+# MAGIC
+# MAGIC **GGR por apuesta** = `stake − (stake × odds)` si ganó, `stake` si perdió
+# MAGIC = `stake − CASE WHEN result='won' THEN stake * odds ELSE 0 END`
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- Grupo control: mismo segmento que los participantes, sin participación en promos semanales
+# MAGIC CREATE OR REPLACE TEMP VIEW v_s4_control_users AS
+# MAGIC SELECT u.user_id AS UserId, u.segment
+# MAGIC FROM db_silver.users u
+# MAGIC WHERE u.user_id NOT IN (SELECT DISTINCT UserId FROM v_s3_user_cohorts_dedup)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- GGR mensual por usuario (participantes + control)
+# MAGIC CREATE OR REPLACE TEMP VIEW v_s4_user_monthly_ggr AS
+# MAGIC WITH all_users AS (
+# MAGIC   SELECT UserId, 'participant' AS user_type, segment FROM v_s3_user_cohorts_dedup
+# MAGIC   UNION ALL
+# MAGIC   SELECT UserId, 'control'     AS user_type, segment FROM v_s4_control_users
+# MAGIC )
+# MAGIC SELECT
+# MAGIC   u.UserId,
+# MAGIC   u.user_type,
+# MAGIC   u.segment,
+# MAGIC   DATE_TRUNC('month', b.bet_date)                                              AS activity_month,
+# MAGIC   SUM(b.stake - CASE WHEN b.result = 'won' THEN b.stake * b.odds ELSE 0 END)  AS ggr
+# MAGIC FROM all_users u
+# MAGIC JOIN db_silver.bets b ON u.UserId = b.user_id
+# MAGIC GROUP BY u.UserId, u.user_type, u.segment, DATE_TRUNC('month', b.bet_date)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- ╔══════════════════════════════════════════════════════════════════╗
+# MAGIC -- ║  DASHBOARD VIEW S4: ARPU mensual participantes vs control      ║
+# MAGIC -- ╚══════════════════════════════════════════════════════════════════╝
+# MAGIC --
+# MAGIC -- Widget sugerido: line chart ARPU por mes, una línea por user_type,
+# MAGIC -- filtro por segment
+# MAGIC CREATE OR REPLACE TEMP VIEW v_s4_arpu_monthly_comparison AS
+# MAGIC SELECT
+# MAGIC   activity_month,
+# MAGIC   user_type,
+# MAGIC   segment,
+# MAGIC   COUNT(DISTINCT UserId)                                      AS active_users,
+# MAGIC   ROUND(SUM(ggr), 2)                                         AS total_ggr,
+# MAGIC   ROUND(SUM(ggr) / NULLIF(COUNT(DISTINCT UserId), 0), 2)    AS arpu
+# MAGIC FROM v_s4_user_monthly_ggr
+# MAGIC GROUP BY activity_month, user_type, segment
+# MAGIC ORDER BY activity_month, segment, user_type;
+# MAGIC
+# MAGIC SELECT * FROM v_s4_arpu_monthly_comparison ORDER BY activity_month, segment
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC ## Sección 5 — Comparativa de métricas clave
+# MAGIC
+# MAGIC Compara **participantes vs control** en tres métricas de engagement, mes a mes:
+# MAGIC - `avg_stakes_per_user` — apuesta media por usuario activo
+# MAGIC - `avg_active_days_per_month` — días con al menos 1 apuesta
+# MAGIC - `avg_active_days_per_week` — media de días activos por semana del mes
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- ╔══════════════════════════════════════════════════════════════════╗
+# MAGIC -- ║  DASHBOARD VIEW S5: Métricas clave participantes vs control     ║
+# MAGIC -- ╚══════════════════════════════════════════════════════════════════╝
+# MAGIC --
+# MAGIC -- Widget sugerido: 3 KPI cards o grouped bar chart
+# MAGIC -- Filtro: segment, activity_month
+# MAGIC CREATE OR REPLACE TEMP VIEW v_s5_key_metrics_comparison AS
+# MAGIC WITH all_users AS (
+# MAGIC   SELECT UserId, 'participant' AS user_type, segment FROM v_s3_user_cohorts_dedup
+# MAGIC   UNION ALL
+# MAGIC   SELECT UserId, 'control'     AS user_type, segment FROM v_s4_control_users
+# MAGIC ),
+# MAGIC user_monthly AS (
+# MAGIC   SELECT
+# MAGIC     u.UserId,
+# MAGIC     u.user_type,
+# MAGIC     u.segment,
+# MAGIC     DATE_TRUNC('month', b.bet_date)                            AS activity_month,
+# MAGIC     COUNT(DISTINCT DATE(b.bet_date))                           AS active_days,
+# MAGIC     COUNT(DISTINCT DATE_TRUNC('week', b.bet_date))             AS active_weeks,
+# MAGIC     SUM(b.stake)                                               AS total_stakes
+# MAGIC   FROM all_users u
+# MAGIC   JOIN db_silver.bets b ON u.UserId = b.user_id
+# MAGIC   GROUP BY u.UserId, u.user_type, u.segment, DATE_TRUNC('month', b.bet_date)
+# MAGIC )
+# MAGIC SELECT
+# MAGIC   user_type,
+# MAGIC   segment,
+# MAGIC   activity_month,
+# MAGIC   COUNT(DISTINCT UserId)                                                     AS active_users,
+# MAGIC   ROUND(AVG(total_stakes),  2)                                               AS avg_stakes_per_user,
+# MAGIC   ROUND(AVG(active_days),   1)                                               AS avg_active_days_per_month,
+# MAGIC   -- días activos / semanas activas del mes = densidad de actividad por semana
+# MAGIC   ROUND(AVG(active_days / NULLIF(active_weeks, 0)), 1)                      AS avg_active_days_per_week
+# MAGIC FROM user_monthly
+# MAGIC GROUP BY user_type, segment, activity_month
+# MAGIC ORDER BY activity_month, segment, user_type;
+# MAGIC
+# MAGIC SELECT * FROM v_s5_key_metrics_comparison ORDER BY activity_month, segment
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC ## Sección 6a — Incremento de ARPU antes/después de la primera promo
+# MAGIC
+# MAGIC Para cada usuario participante, compara su GGR en una ventana de ±`WINDOW_DAYS` días
+# MAGIC alrededor de su **primera participación** en una campaña semanal:
+# MAGIC
+# MAGIC - **Before**: `[first_promo_week − 28d, first_promo_week − 1d]`
+# MAGIC - **After**: `[first_promo_week, first_promo_week + 27d]`
+# MAGIC
+# MAGIC El uplift = `GGR_after − GGR_before` (positivo = más revenue después de la promo)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- GGR individual por usuario en ventanas before/after su primera promo semanal
+# MAGIC CREATE OR REPLACE TEMP VIEW v_s6_user_arpu_before_after AS
+# MAGIC SELECT
+# MAGIC   c.UserId,
+# MAGIC   c.segment,
+# MAGIC   c.cohort_week                                                                         AS first_promo_week,
+# MAGIC   -- GGR en los 28 días ANTES de la primera promo
+# MAGIC   ROUND(SUM(CASE
+# MAGIC     WHEN b.bet_date < c.cohort_week
+# MAGIC     THEN b.stake - CASE WHEN b.result = 'won' THEN b.stake * b.odds ELSE 0 END
+# MAGIC     ELSE 0
+# MAGIC   END), 2)                                                                              AS ggr_before,
+# MAGIC   -- GGR en los 28 días DESPUÉS (inclusive el día de la promo)
+# MAGIC   ROUND(SUM(CASE
+# MAGIC     WHEN b.bet_date >= c.cohort_week
+# MAGIC     THEN b.stake - CASE WHEN b.result = 'won' THEN b.stake * b.odds ELSE 0 END
+# MAGIC     ELSE 0
+# MAGIC   END), 2)                                                                              AS ggr_after,
+# MAGIC   -- Días activos en cada ventana
+# MAGIC   COUNT(DISTINCT CASE WHEN b.bet_date <  c.cohort_week THEN DATE(b.bet_date) END)      AS active_days_before,
+# MAGIC   COUNT(DISTINCT CASE WHEN b.bet_date >= c.cohort_week THEN DATE(b.bet_date) END)      AS active_days_after
+# MAGIC FROM v_s3_user_cohorts_dedup c
+# MAGIC JOIN db_silver.bets b ON c.UserId = b.user_id
+# MAGIC WHERE b.bet_date BETWEEN DATE_SUB(c.cohort_week, 28)
+# MAGIC                      AND DATE_ADD(c.cohort_week, 27)
+# MAGIC GROUP BY c.UserId, c.segment, c.cohort_week
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- ╔══════════════════════════════════════════════════════════════════╗
+# MAGIC -- ║  DASHBOARD VIEW S6a: ARPU uplift by segment                    ║
+# MAGIC -- ╚══════════════════════════════════════════════════════════════════╝
+# MAGIC --
+# MAGIC -- Widget sugerido: KPI cards por segmento (avg_arpu_uplift + uplift_pct)
+# MAGIC -- o waterfall chart avg_ggr_before → avg_ggr_after por segmento
+# MAGIC CREATE OR REPLACE TEMP VIEW v_s6_arpu_uplift_by_segment AS
+# MAGIC SELECT
+# MAGIC   segment,
+# MAGIC   COUNT(DISTINCT UserId)                                             AS users_analyzed,
+# MAGIC   ROUND(AVG(ggr_before), 2)                                         AS avg_ggr_before_28d,
+# MAGIC   ROUND(AVG(ggr_after),  2)                                         AS avg_ggr_after_28d,
+# MAGIC   ROUND(AVG(ggr_after - ggr_before), 2)                            AS avg_arpu_uplift,
+# MAGIC   ROUND(PERCENTILE(ggr_after - ggr_before, 0.25), 2)              AS p25_uplift,
+# MAGIC   ROUND(PERCENTILE(ggr_after - ggr_before, 0.75), 2)              AS p75_uplift,
+# MAGIC   ROUND(AVG((ggr_after - ggr_before) * 100.0
+# MAGIC         / NULLIF(ABS(ggr_before), 0)), 1)                          AS avg_uplift_pct,
+# MAGIC   ROUND(AVG(active_days_before), 1)                                AS avg_active_days_before,
+# MAGIC   ROUND(AVG(active_days_after),  1)                                AS avg_active_days_after
+# MAGIC FROM v_s6_user_arpu_before_after
+# MAGIC GROUP BY segment
+# MAGIC ORDER BY avg_arpu_uplift DESC;
+# MAGIC
+# MAGIC SELECT * FROM v_s6_arpu_uplift_by_segment
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC ## Sección 6b — Expected ARPU uplift por segmento (modelo XGBoost)
+# MAGIC
+# MAGIC Entrena un modelo para predecir el uplift de ARPU esperado dado:
+# MAGIC - El **segmento** del usuario
+# MAGIC - El **tipo de campaña** (primera promo semanal que recibió)
+# MAGIC - Su **comportamiento previo** (stakes, días activos, bets en los 28d anteriores)
+# MAGIC
+# MAGIC **Output**: `v_s6_expected_arpu_by_segment` — uplift medio esperado por segmento × tipo de promo,
+# MAGIC con percentiles p25/p75 para dar un rango de confianza.
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- Features de entrenamiento: comportamiento pre-promo + target (arpu_uplift)
+# MAGIC CREATE OR REPLACE TEMP VIEW v_s6_model_features AS
+# MAGIC WITH user_first_promo_type AS (
+# MAGIC   -- Primera campaña semanal en la que cada usuario cualificó
+# MAGIC   SELECT pu.UserId, wp.PromotionName AS first_promo_name
+# MAGIC   FROM promotion_user pu
+# MAGIC   JOIN v_s3_weekly_promos wp ON pu.PromotionId = wp.PromotionId
+# MAGIC   WHERE pu.QualificationCount > 0
+# MAGIC   QUALIFY ROW_NUMBER() OVER (
+# MAGIC     PARTITION BY pu.UserId
+# MAGIC     ORDER BY COALESCE(pu.OptInDateTimeUtc, wp.StartDateUtc)
+# MAGIC   ) = 1
+# MAGIC ),
+# MAGIC user_bets_before AS (
+# MAGIC   -- Comportamiento del usuario en los 28 días ANTERIORES a su primera promo
+# MAGIC   SELECT
+# MAGIC     c.UserId,
+# MAGIC     AVG(b.stake)                             AS avg_stake_28d_before,
+# MAGIC     COUNT(DISTINCT DATE(b.bet_date))         AS active_days_28d_before,
+# MAGIC     COUNT(*)                                 AS total_bets_28d_before,
+# MAGIC     SUM(b.stake)                             AS total_stakes_28d_before
+# MAGIC   FROM v_s3_user_cohorts_dedup c
+# MAGIC   JOIN db_silver.bets b ON c.UserId = b.user_id
+# MAGIC   WHERE b.bet_date BETWEEN DATE_SUB(c.cohort_week, 28)
+# MAGIC                        AND DATE_SUB(c.cohort_week, 1)
+# MAGIC   GROUP BY c.UserId
+# MAGIC )
+# MAGIC SELECT
+# MAGIC   ba.UserId,
+# MAGIC   ba.segment,
+# MAGIC   fp.first_promo_name,
+# MAGIC   COALESCE(ub.avg_stake_28d_before,    0) AS avg_stake_28d_before,
+# MAGIC   COALESCE(ub.active_days_28d_before,  0) AS active_days_28d_before,
+# MAGIC   COALESCE(ub.total_bets_28d_before,   0) AS total_bets_28d_before,
+# MAGIC   COALESCE(ub.total_stakes_28d_before, 0) AS total_stakes_28d_before,
+# MAGIC   ba.ggr_after - ba.ggr_before             AS arpu_uplift
+# MAGIC FROM v_s6_user_arpu_before_after ba
+# MAGIC LEFT JOIN user_first_promo_type fp ON ba.UserId = fp.UserId
+# MAGIC LEFT JOIN user_bets_before ub       ON ba.UserId = ub.UserId
+# MAGIC WHERE fp.first_promo_name IS NOT NULL;
+# MAGIC
+# MAGIC SELECT COUNT(*) AS training_rows, AVG(arpu_uplift) AS mean_uplift FROM v_s6_model_features
+
+# COMMAND ----------
+
+import pandas as pd
+import numpy as np
+
+try:
+    from xgboost import XGBRegressor
+    MODEL_BACKEND = "xgboost"
+except ImportError:
+    from sklearn.ensemble import GradientBoostingRegressor as XGBRegressor
+    MODEL_BACKEND = "sklearn GradientBoosting"
+
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+
+print(f"Usando: {MODEL_BACKEND}")
+
+# Cargar datos de entrenamiento
+features_pdf = spark.sql("SELECT * FROM v_s6_model_features").toPandas()
+features_pdf = features_pdf.dropna(subset=["arpu_uplift"])
+
+MIN_ROWS = 30
+if len(features_pdf) < MIN_ROWS:
+    print(f"⚠️  Solo {len(features_pdf)} usuarios con datos completos. "
+          f"Necesitas al menos {MIN_ROWS} para entrenar el modelo.")
+else:
+    print(f"Entrenando con {len(features_pdf)} usuarios...")
+
+    # Encode categoricals
+    le_seg   = LabelEncoder()
+    le_promo = LabelEncoder()
+    features_pdf["segment_enc"]    = le_seg.fit_transform(features_pdf["segment"])
+    features_pdf["promo_type_enc"] = le_promo.fit_transform(features_pdf["first_promo_name"])
+
+    feature_cols = [
+        "segment_enc", "promo_type_enc",
+        "avg_stake_28d_before", "active_days_28d_before",
+        "total_bets_28d_before", "total_stakes_28d_before",
+    ]
+    X = features_pdf[feature_cols].fillna(0)
+    y = features_pdf["arpu_uplift"]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    model = XGBRegressor(n_estimators=100, max_depth=4, learning_rate=0.1, random_state=42)
+    model.fit(X_train, y_train)
+
+    mae = mean_absolute_error(y_test, model.predict(X_test))
+    print(f"MAE en test : {mae:.2f}€  ({len(X_test)} usuarios)")
+
+    # Feature importance
+    fi = pd.DataFrame({
+        "feature":    feature_cols,
+        "importance": model.feature_importances_,
+    }).sort_values("importance", ascending=False)
+    print("\nImportancia de features:")
+    print(fi.to_string(index=False))
+
+    # Predecir para todos los usuarios
+    features_pdf["predicted_uplift"] = model.predict(X)
+
+    # Agregar por segmento × tipo de promo
+    summary = (
+        features_pdf
+        .groupby(["segment", "first_promo_name"])
+        .agg(
+            user_count          =("UserId",           "count"),
+            avg_actual_uplift   =("arpu_uplift",      "mean"),
+            avg_predicted_uplift=("predicted_uplift", "mean"),
+            p25_predicted       =("predicted_uplift", lambda x: np.percentile(x, 25)),
+            p75_predicted       =("predicted_uplift", lambda x: np.percentile(x, 75)),
+        )
+        .reset_index()
+        .rename(columns={"first_promo_name": "promo_type"})
+        .round(2)
+        .sort_values("avg_predicted_uplift", ascending=False)
+    )
+
+    # ╔══════════════════════════════════════════════════════════════════╗
+    # ║  DASHBOARD VIEW S6b: Expected ARPU uplift por segmento         ║
+    # ╚══════════════════════════════════════════════════════════════════╝
+    # Widget sugerido: heatmap segmento × promo_type (avg_predicted_uplift)
+    # o tabla ranking con p25/p75 como error bars
+    spark.createDataFrame(summary).createOrReplaceTempView("v_s6_expected_arpu_by_segment")
+    print("\n✓ View creada: v_s6_expected_arpu_by_segment")
+    display(spark.sql("SELECT * FROM v_s6_expected_arpu_by_segment"))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ---
+# MAGIC ## Resumen de todas las views generadas
 # MAGIC
 # MAGIC | View | Sección | Descripción | Dashboard widget |
 # MAGIC |------|---------|-------------|-----------------|
@@ -531,25 +893,7 @@ spark.conf.set("END_DATE", END_DATE)
 # MAGIC | `v_s3_cohort_retention` | S3 | Retención semanal por cohort (time series) | Line chart |
 # MAGIC | `v_s3_cohort_matrix` | S3 | Matriz pivot cohort × semana (%) | Heatmap |
 # MAGIC | `v_s3_cohort_size_evolution` | S3 | Nuevos usuarios por semana + acumulado | Bar + line chart |
-# MAGIC
-# MAGIC ---
-# MAGIC ## ⏳ Próximas secciones (requieren `db_silver.bets`)
-# MAGIC
-# MAGIC | Sección | Descripción | Columnas necesarias en `bets` |
-# MAGIC |---------|-------------|-------------------------------|
-# MAGIC | S4 | ARPU cohort vs mismo segmento | `user_id`, `bet_date`, `stake`, `odds`, `result` |
-# MAGIC | S5 | Comparativa métricas clave (active days, stakes) | `user_id`, `bet_date`, `stake` |
-# MAGIC | S6a | Incremento de ARPU antes/después de primera promo | `user_id`, `bet_date`, `stake`, `odds`, `result` |
-# MAGIC | S6b | Expected ARPU uplift por segmento (modelo XGBoost) | Todo lo anterior + `db_silver.users` con `segment` |
-# MAGIC
-# MAGIC > **Columnas mínimas de `db_silver.bets`:**
-# MAGIC > - `user_id` — debe coincidir con `UserId` del BonusEngine
-# MAGIC > - `bet_date` — timestamp o date de la apuesta
-# MAGIC > - `stake` — importe apostado
-# MAGIC > - `odds` — cuota decimal (para calcular GGR)
-# MAGIC > - `result` — `'won'` / `'lost'` (para calcular GGR)
-# MAGIC >
-# MAGIC > **GGR por apuesta** = `stake - CASE WHEN result='won' THEN stake * odds ELSE 0 END`
-# MAGIC >
-# MAGIC > Si no tienes `odds` y `result` pero sí tienes `net_revenue` o `pnl` ya calculado,
-# MAGIC > podemos adaptar las queries directamente.
+# MAGIC | `v_s4_arpu_monthly_comparison` | S4 | ARPU mensual participantes vs control (mismo segmento) | Line chart por segmento |
+# MAGIC | `v_s5_key_metrics_comparison` | S5 | Avg stakes, active days/mes, active days/sem por grupo | Grouped bar chart |
+# MAGIC | `v_s6_arpu_uplift_by_segment` | S6a | Uplift de ARPU observado (before/after) por segmento | KPI cards + waterfall |
+# MAGIC | `v_s6_expected_arpu_by_segment` | S6b | Expected ARPU uplift predicho por XGBoost (segmento × promo) | Heatmap |
