@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,41 +13,32 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const mockUsers = [
-  {
-    id: "USR-001",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    segment: "VIP",
-    activeRewards: 3,
-    totalIssued: 12,
-    totalRedeemed: 8,
-    lifetimeValue: "₦2,450,000"
-  },
-  {
-    id: "USR-002",
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    segment: "New",
-    activeRewards: 1,
-    totalIssued: 2,
-    totalRedeemed: 1,
-    lifetimeValue: "₦125,000"
-  },
-  {
-    id: "USR-003",
-    name: "Michael Johnson",
-    email: "michael.j@example.com",
-    segment: "Returning",
-    activeRewards: 2,
-    totalIssued: 8,
-    totalRedeemed: 6,
-    lifetimeValue: "₦890,000"
-  },
-];
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  segment: string;
+  activeRewards: number;
+  totalIssued: number;
+  totalRedeemed: number;
+  lifetimeValue: string;
+}
 
 export default function Users() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("search", searchQuery);
+
+    fetch(`/api/users?${params}`)
+      .then((res) => res.json())
+      .then(setUsers)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -61,7 +52,7 @@ export default function Users() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>User Lookup</CardTitle>
-              <CardDescription>Search by user ID, email, or name</CardDescription>
+              <CardDescription>{users.length} users found</CardDescription>
             </div>
             <div className="relative w-96">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -75,6 +66,9 @@ export default function Users() {
           </div>
         </CardHeader>
         <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading users...</div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -88,7 +82,7 @@ export default function Users() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockUsers.map((user) => (
+              {users.map((user) => (
                 <TableRow key={user.id} className="cursor-pointer hover:bg-muted/50">
                   <TableCell>
                     <div>
@@ -114,6 +108,7 @@ export default function Users() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
     </div>

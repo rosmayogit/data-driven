@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MetricCard } from "@/components/MetricCard";
 import { Button } from "@/components/ui/button";
@@ -5,41 +6,46 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Gift, DollarSign, Users, Plus } from "lucide-react";
 
-const mockCampaigns = [
-  { 
-    id: 1, 
-    name: "VIP Cashback Q4", 
-    type: "Cash", 
-    status: "Active", 
-    issued: 1247, 
-    redeemed: 892,
-    redemptionRate: 71.5,
-    roi: 2.3
-  },
-  { 
-    id: 2, 
-    name: "Welcome Free Bet", 
-    type: "FreeBet", 
-    status: "Active", 
-    issued: 3421, 
-    redeemed: 2156,
-    redemptionRate: 63.0,
-    roi: 1.8
-  },
-  { 
-    id: 3, 
-    name: "Casino Bonus Weekend", 
-    type: "CasinoBonus", 
-    status: "Paused", 
-    issued: 892, 
-    redeemed: 445,
-    redemptionRate: 49.9,
-    roi: 1.2
-  },
-];
+interface Campaign {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  issued: number;
+  redeemed: number;
+  redemptionRate: number;
+  roi: number;
+}
+
+interface DashboardData {
+  metrics: {
+    activeCampaigns: number;
+    rewardsIssued7d: string;
+    redemptionRate: string;
+    avgROI: string;
+  };
+  topCampaigns: Campaign[];
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then((res) => res.json())
+      .then(setData)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading dashboard...</div>;
+  }
+
+  const metrics = data?.metrics ?? { activeCampaigns: 0, rewardsIssued7d: "0", redemptionRate: "0%", avgROI: "0x" };
+  const campaigns = data?.topCampaigns ?? [];
 
   return (
       <div className="space-y-6">
@@ -57,38 +63,34 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Active Campaigns"
-          value={12}
-          change={{ value: "2", positive: true }}
+          value={metrics.activeCampaigns}
           icon={Gift}
         />
         <MetricCard
           title="Rewards Issued (7d)"
-          value="8.2K"
-          change={{ value: "12.3%", positive: true }}
+          value={metrics.rewardsIssued7d}
           icon={TrendingUp}
         />
         <MetricCard
           title="Redemption Rate"
-          value="68.4%"
-          change={{ value: "3.2%", positive: true }}
+          value={metrics.redemptionRate}
           icon={Users}
         />
         <MetricCard
           title="Avg ROI"
-          value="1.9x"
-          change={{ value: "0.3x", positive: true }}
+          value={metrics.avgROI}
           icon={DollarSign}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Active Campaigns</CardTitle>
-          <CardDescription>Overview of your current reward campaigns</CardDescription>
+          <CardTitle>Top Campaigns</CardTitle>
+          <CardDescription>Your best performing reward campaigns</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockCampaigns.map((campaign) => (
+            {campaigns.map((campaign) => (
               <div
                 key={campaign.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"

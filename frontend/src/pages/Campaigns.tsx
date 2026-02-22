@@ -1,5 +1,5 @@
-import { useState } from "react";
- import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,68 +15,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const mockCampaigns = [
-  { 
-    id: "RW-2024-001",
-    name: "VIP Cashback Q4",
-    type: "Cash",
-    status: "Active",
-    amount: { mode: "Variable", value: "0.10 * losses_7d" },
-    issued: 1247,
-    redeemed: 892,
-    active: 203,
-    expired: 152,
-    createdAt: "2024-10-01"
-  },
-  { 
-    id: "RW-2024-002",
-    name: "Welcome Free Bet",
-    type: "FreeBet",
-    status: "Active",
-    amount: { mode: "Fixed", value: "5000 NGN" },
-    issued: 3421,
-    redeemed: 2156,
-    active: 891,
-    expired: 374,
-    createdAt: "2024-09-15"
-  },
-  { 
-    id: "RW-2024-003",
-    name: "Casino Bonus Weekend",
-    type: "CasinoBonus",
-    status: "Paused",
-    amount: { mode: "Fixed", value: "10000 NGN" },
-    issued: 892,
-    redeemed: 445,
-    active: 12,
-    expired: 435,
-    createdAt: "2024-10-05"
-  },
-  { 
-    id: "RW-2024-004",
-    name: "Sports Deposit Match",
-    type: "SportsBonus",
-    status: "Active",
-    amount: { mode: "Variable", value: "1.0 * deposits_24h" },
-    issued: 567,
-    redeemed: 423,
-    active: 89,
-    expired: 55,
-    createdAt: "2024-10-08"
-  },
-  { 
-    id: "RW-2024-005",
-    name: "Free Spins Friday",
-    type: "FreeSpin",
-    status: "Archived",
-    amount: { mode: "Fixed", value: "50 spins" },
-    issued: 2341,
-    redeemed: 2003,
-    active: 0,
-    expired: 338,
-    createdAt: "2024-09-01"
-  },
-];
+interface Campaign {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  amount: { mode: string; value: string };
+  issued: number;
+  redeemed: number;
+  active: number;
+  expired: number;
+  createdAt: string;
+}
 
 const statusColors = {
   Active: "default",
@@ -95,7 +45,21 @@ const typeColors = {
 export default function Campaigns() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-   const navigate = useNavigate();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    if (searchQuery) params.set("search", searchQuery);
+
+    fetch(`/api/campaigns?${params}`)
+      .then((res) => res.json())
+      .then(setCampaigns)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [statusFilter, searchQuery]);
 
   return (
     <>
@@ -116,7 +80,7 @@ export default function Campaigns() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>All Campaigns</CardTitle>
-              <CardDescription>View and manage all reward campaigns</CardDescription>
+              <CardDescription>{campaigns.length} campaigns found</CardDescription>
             </div>
             <div className="flex gap-2">
               <div className="relative w-64">
@@ -144,6 +108,9 @@ export default function Campaigns() {
           </div>
         </CardHeader>
         <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading campaigns...</div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -159,7 +126,7 @@ export default function Campaigns() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockCampaigns.map((campaign) => (
+              {campaigns.map((campaign) => (
                 <TableRow key={campaign.id} className="cursor-pointer hover:bg-muted/50">
                   <TableCell>
                     <div>
@@ -188,12 +155,13 @@ export default function Campaigns() {
                   <TableCell className="text-right text-primary">{campaign.active.toLocaleString()}</TableCell>
                   <TableCell className="text-right text-muted-foreground">{campaign.expired.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => navigate(`/campaigns/${mockCampaigns.indexOf(campaign) + 1}`)}>View</Button>
+                    <Button variant="ghost" size="sm" onClick={() => navigate(`/campaigns/${campaign.id}`)}>View</Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
       </div>
