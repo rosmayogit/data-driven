@@ -526,9 +526,18 @@ spark.conf.set("END_DATE", END_DATE)
 
 # COMMAND ----------
 
-# Tablas externas — ajusta a tu catálogo real
-BETS_TABLE  = "db_silver.bets"    # columnas requeridas: user_id, bet_date, stake, odds, result
-USERS_TABLE = "db_silver.users"   # columnas requeridas: user_id, segment
+# ── Tablas de apuestas y usuarios ─────────────────────────────────────────────
+#
+# Opción A — datos sintéticos (ejecuta primero 00_generate_bonusengine_data):
+#   BETS_TABLE  = "bets"
+#   USERS_TABLE = "users"
+#
+# Opción B — datos reales:
+#   BETS_TABLE  = "db_silver.bets"   (user_id, bet_date, stake, odds, result)
+#   USERS_TABLE = "db_silver.users"  (user_id, segment)
+#
+BETS_TABLE  = "bets"
+USERS_TABLE = "users"
 
 # Ventana de días para el análisis before/after (S6)
 WINDOW_DAYS = 28
