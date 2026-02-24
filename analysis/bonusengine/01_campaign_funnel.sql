@@ -14,9 +14,6 @@
 --   hive_metastore.db_silver_bonusengine.promotion_user
 --   hive_metastore.db_silver_bonusengine.reward_redeem_user
 --   hive_metastore.db_bronze_tps.users_userdetail
---
--- Widget setup (run once in a %python cell before this query):
---   dbutils.widgets.text("campaign_id", "980", "Campaign ID")
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -29,7 +26,7 @@ WITH campaign AS (
     CAST(StartDateUtc AS DATE) AS start_date,
     CAST(EndDateUtc   AS DATE) AS end_date
   FROM hive_metastore.db_silver_bonusengine.promotion_detail
-  WHERE PromotionId = CAST(${campaign_id} AS INT)
+  WHERE PromotionId = 980
 ),
 
 -- ---------------------------------------------------------------------------
@@ -43,7 +40,7 @@ registered AS (
   FROM hive_metastore.db_silver_bonusengine.promotion_user pu
   INNER JOIN hive_metastore.db_bronze_tps.users_userdetail u
     ON pu.UserId = u.userId
-  WHERE pu.PromotionId = CAST(${campaign_id} AS INT)
+  WHERE pu.PromotionId = 980
 ),
 
 -- ---------------------------------------------------------------------------
@@ -52,7 +49,7 @@ registered AS (
 opted_in AS (
   SELECT DISTINCT UserId
   FROM hive_metastore.db_silver_bonusengine.promotion_user
-  WHERE PromotionId = CAST(${campaign_id} AS INT)
+  WHERE PromotionId = 980
     AND UserIsOptIn = TRUE
 ),
 
@@ -62,7 +59,7 @@ opted_in AS (
 reward_obtained AS (
   SELECT DISTINCT UserId
   FROM hive_metastore.db_silver_bonusengine.reward_redeem_user
-  WHERE PromotionId = CAST(${campaign_id} AS INT)
+  WHERE PromotionId = 980
 ),
 
 -- ---------------------------------------------------------------------------
@@ -71,7 +68,7 @@ reward_obtained AS (
 reward_redeemed AS (
   SELECT DISTINCT UserId
   FROM hive_metastore.db_silver_bonusengine.reward_redeem_user
-  WHERE PromotionId = CAST(${campaign_id} AS INT)
+  WHERE PromotionId = 980
     AND RedeemedOnUtc IS NOT NULL
 ),
 
@@ -86,7 +83,7 @@ funnel_daily AS (
     COUNT(DISTINCT ro.UserId)   AS reward_obtained,
     COUNT(DISTINCT rr.UserId)   AS reward_redeemed
   FROM registered r
-  LEFT JOIN opted_in      oi ON r.UserId = oi.UserId
+  LEFT JOIN opted_in        oi ON r.UserId = oi.UserId
   LEFT JOIN reward_obtained ro ON r.UserId = ro.UserId
   LEFT JOIN reward_redeemed rr ON r.UserId = rr.UserId
   GROUP BY r.reg_day
@@ -98,8 +95,8 @@ funnel_daily AS (
 SELECT
   c.PromotionId,
   c.PromotionName,
-  c.start_date                                                        AS campaign_start,
-  c.end_date                                                          AS campaign_end,
+  c.start_date                                                         AS campaign_start,
+  c.end_date                                                           AS campaign_end,
   f.reg_day,
   f.new_users,
   f.opted_in,
@@ -124,54 +121,53 @@ WITH campaign AS (
     CAST(StartDateUtc AS DATE) AS start_date,
     CAST(EndDateUtc   AS DATE) AS end_date
   FROM hive_metastore.db_silver_bonusengine.promotion_detail
-  WHERE PromotionId = CAST(${campaign_id} AS INT)
+  WHERE PromotionId = 980
 ),
 
 registered AS (
-  SELECT
-    pu.UserId
+  SELECT pu.UserId
   FROM hive_metastore.db_silver_bonusengine.promotion_user pu
   INNER JOIN hive_metastore.db_bronze_tps.users_userdetail u
     ON pu.UserId = u.userId
-  WHERE pu.PromotionId = CAST(${campaign_id} AS INT)
+  WHERE pu.PromotionId = 980
 ),
 
 opted_in AS (
   SELECT DISTINCT UserId
   FROM hive_metastore.db_silver_bonusengine.promotion_user
-  WHERE PromotionId = CAST(${campaign_id} AS INT)
+  WHERE PromotionId = 980
     AND UserIsOptIn = TRUE
 ),
 
 reward_obtained AS (
   SELECT DISTINCT UserId
   FROM hive_metastore.db_silver_bonusengine.reward_redeem_user
-  WHERE PromotionId = CAST(${campaign_id} AS INT)
+  WHERE PromotionId = 980
 ),
 
 reward_redeemed AS (
   SELECT DISTINCT UserId
   FROM hive_metastore.db_silver_bonusengine.reward_redeem_user
-  WHERE PromotionId = CAST(${campaign_id} AS INT)
+  WHERE PromotionId = 980
     AND RedeemedOnUtc IS NOT NULL
 )
 
 SELECT
   c.PromotionId,
   c.PromotionName,
-  c.start_date                                                        AS campaign_start,
-  c.end_date                                                          AS campaign_end,
-  COUNT(DISTINCT r.UserId)                                            AS new_users,
-  COUNT(DISTINCT oi.UserId)                                           AS opted_in,
-  ROUND(100.0 * COUNT(DISTINCT oi.UserId) / NULLIF(COUNT(DISTINCT r.UserId), 0), 1) AS pct_optin,
-  COUNT(DISTINCT ro.UserId)                                           AS reward_obtained,
-  ROUND(100.0 * COUNT(DISTINCT ro.UserId) / NULLIF(COUNT(DISTINCT oi.UserId), 0), 1) AS pct_reward,
-  COUNT(DISTINCT rr.UserId)                                           AS reward_redeemed,
-  ROUND(100.0 * COUNT(DISTINCT rr.UserId) / NULLIF(COUNT(DISTINCT ro.UserId), 0), 1) AS pct_redeemed,
-  ROUND(100.0 * COUNT(DISTINCT rr.UserId) / NULLIF(COUNT(DISTINCT r.UserId), 0), 1)  AS pct_overall
+  c.start_date                                                                          AS campaign_start,
+  c.end_date                                                                            AS campaign_end,
+  COUNT(DISTINCT r.UserId)                                                              AS new_users,
+  COUNT(DISTINCT oi.UserId)                                                             AS opted_in,
+  ROUND(100.0 * COUNT(DISTINCT oi.UserId) / NULLIF(COUNT(DISTINCT r.UserId),  0), 1)  AS pct_optin,
+  COUNT(DISTINCT ro.UserId)                                                             AS reward_obtained,
+  ROUND(100.0 * COUNT(DISTINCT ro.UserId) / NULLIF(COUNT(DISTINCT oi.UserId), 0), 1)  AS pct_reward,
+  COUNT(DISTINCT rr.UserId)                                                             AS reward_redeemed,
+  ROUND(100.0 * COUNT(DISTINCT rr.UserId) / NULLIF(COUNT(DISTINCT ro.UserId), 0), 1)  AS pct_redeemed,
+  ROUND(100.0 * COUNT(DISTINCT rr.UserId) / NULLIF(COUNT(DISTINCT r.UserId),  0), 1)  AS pct_overall
 FROM registered r
 CROSS JOIN campaign c
-LEFT JOIN opted_in      oi ON r.UserId = oi.UserId
+LEFT JOIN opted_in        oi ON r.UserId = oi.UserId
 LEFT JOIN reward_obtained ro ON r.UserId = ro.UserId
 LEFT JOIN reward_redeemed rr ON r.UserId = rr.UserId
 GROUP BY c.PromotionId, c.PromotionName, c.start_date, c.end_date;
