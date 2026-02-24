@@ -36,7 +36,7 @@ WITH campaign AS (
 registered AS (
   SELECT
     pu.UserId,
-    CAST(u.registration_date AS DATE) AS reg_day
+    CAST(u.RegistrationDate AS DATE) AS reg_day
   FROM hive_metastore.db_silver_bonusengine.promotion_user pu
   INNER JOIN hive_metastore.db_bronze_tps.users_userdetail u
     ON pu.UserId = u.userId
