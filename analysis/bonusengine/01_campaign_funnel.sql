@@ -7,7 +7,7 @@
 --   3. Reward       — users who were issued a reward for this campaign
 --   4. Redeemed     — users who redeemed their reward
 --
--- Base: hive_metastore.db_bronze_tps.users_userdetail (RegistrationDate)
+-- Base: hive_metastore.db_bronze_tps.users_user (RegistrationDate)
 -- Bonus tables joined via UserId
 -- Grouped by: RegistrationDate (usuarios nuevos al día)
 -- =============================================================================
@@ -30,7 +30,7 @@ new_users AS (
   SELECT
     u.UserId,
     CAST(u.RegistrationDate AS DATE) AS reg_day
-  FROM hive_metastore.db_bronze_tps.users_userdetail u
+  FROM hive_metastore.db_bronze_tps.users_user u
   CROSS JOIN campaign c
   WHERE CAST(u.RegistrationDate AS DATE) BETWEEN c.start_date AND c.end_date
 ),
@@ -103,7 +103,7 @@ WITH campaign AS (
 
 new_users AS (
   SELECT u.UserId
-  FROM hive_metastore.db_bronze_tps.users_userdetail u
+  FROM hive_metastore.db_bronze_tps.users_user u
   CROSS JOIN campaign c
   WHERE CAST(u.RegistrationDate AS DATE) BETWEEN c.start_date AND c.end_date
 ),
