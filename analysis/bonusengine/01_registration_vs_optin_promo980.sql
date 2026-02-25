@@ -17,11 +17,12 @@
 -- ============================================================================
 
 WITH registrations AS (
-  -- Un registro por usuario con su fecha de registro
+  -- Un registro por usuario con su fecha de registro (desde el 2026-01-01)
   SELECT
     u.id                        AS UserId,
     CAST(u.date_joined AS DATE) AS RegistrationDate
   FROM hive_metastore.db_bronze_tps.users_user u
+  WHERE CAST(u.date_joined AS DATE) >= '2026-01-01'
 ),
 
 optins AS (
