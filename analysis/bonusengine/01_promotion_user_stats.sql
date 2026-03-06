@@ -62,9 +62,9 @@ SELECT
         / NULLIF(COUNT(DISTINCT v.IssuedToUserId), 0) * 100, 1
     )                                                                       AS redeem_rate_pct
 
-FROM promotion_user  pu
+FROM db_silver_bonusengine.promotion_user  pu
 
-INNER JOIN promotion_detail  pd
+INNER JOIN db_silver_bonusengine.promotion_detail  pd
     ON pd.PromotionId = pu.PromotionId
 
 LEFT JOIN voucher_agg  v
