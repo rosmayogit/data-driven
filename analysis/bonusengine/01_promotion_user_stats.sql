@@ -6,7 +6,7 @@
 --
 -- Métricas:
 --   assigned  → usuarios únicos asignados a la promo
---   wagered   → usuarios únicos que han realizado al menos una apuesta (ConfirmedBetsPlaced > 0)
+--   wagered   → usuarios únicos que han cumplido condiciones de la promo (QualificationCount > 0)
 --   won       → usuarios únicos a quienes se emitió al menos un voucher
 --   redeemed  → usuarios únicos que redimieron al menos un voucher
 -- ============================================================================
