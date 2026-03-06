@@ -6,7 +6,7 @@
 --
 -- Métricas:
 --   assigned  → usuarios únicos asignados a la promo
---   wagered   → usuarios únicos que han cumplido condiciones de la promo (QualificationCount > 0)
+--   wagered   → usuarios únicos que apostaron (ConfirmedGrossAmountStaked > 0)
 --   won       → usuarios únicos a quienes se emitió al menos un voucher
 --   redeemed  → usuarios únicos que redimieron al menos un voucher
 -- ============================================================================
@@ -39,7 +39,7 @@ SELECT
 
     -- Funnel (usuarios únicos)
     COUNT(DISTINCT pu.UserId)                                               AS assigned,
-    COUNT(DISTINCT CASE WHEN pu.QualificationCount > 0
+    COUNT(DISTINCT CASE WHEN pu.ConfirmedGrossAmountStaked > 0
                         THEN pu.UserId END)                                 AS wagered,
     COUNT(DISTINCT v.IssuedToUserId)                                        AS won,
     COUNT(DISTINCT CASE WHEN v.redeemed_vouchers > 0
@@ -47,7 +47,7 @@ SELECT
 
     -- Tasas de conversión
     ROUND(
-        COUNT(DISTINCT CASE WHEN pu.QualificationCount > 0
+        COUNT(DISTINCT CASE WHEN pu.ConfirmedGrossAmountStaked > 0
                             THEN pu.UserId END)
         / NULLIF(COUNT(DISTINCT pu.UserId), 0) * 100, 1
     )                                                                       AS wagered_rate_pct,
