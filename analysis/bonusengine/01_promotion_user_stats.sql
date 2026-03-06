@@ -63,7 +63,6 @@ SELECT
     )                                                                       AS redeem_rate_pct
 
 FROM promotion_user  pu
-WHERE pu.PromotionId IN (1037, 1038, 1039, 1040, 1041)
 
 INNER JOIN promotion_detail  pd
     ON pd.PromotionId = pu.PromotionId
@@ -71,6 +70,8 @@ INNER JOIN promotion_detail  pd
 LEFT JOIN voucher_agg  v
     ON  v.CampaignId     = pu.PromotionId
     AND v.IssuedToUserId = pu.UserId
+
+WHERE pu.PromotionId IN (1037, 1038, 1039, 1040, 1041)
 
 GROUP BY
     pu.PromotionId,
