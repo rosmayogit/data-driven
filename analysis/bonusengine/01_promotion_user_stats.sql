@@ -18,7 +18,6 @@ WITH voucher AS (
         IssuedOnUTC,
         RedeemedOnUTC
     FROM hive_metastore.db_silver_voucher.eventsmaster
-    WHERE row_valid_to_ts IS NULL   -- solo registro vigente (SCD2)
 ),
 
 voucher_agg AS (
