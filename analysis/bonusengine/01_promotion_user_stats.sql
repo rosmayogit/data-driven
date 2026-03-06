@@ -43,8 +43,7 @@ SELECT
     )                                                                       AS optin_rate_pct,
     ROUND(
         COUNT(v.IssuedToUserId)
-        / NULLIF(COUNT(DISTINCT CASE WHEN pu.OptInDateTimeUtc IS NOT NULL
-                                     THEN pu.UserId END), 0) * 100, 1
+        / NULLIF(COUNT(DISTINCT pu.UserId), 0) * 100, 1
     )                                                                       AS win_rate_pct,
     ROUND(
         COUNT(CASE WHEN v.RedeemedOnUTC IS NOT NULL THEN v.IssuedToUserId END)
