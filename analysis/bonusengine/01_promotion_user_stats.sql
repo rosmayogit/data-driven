@@ -29,25 +29,26 @@ SELECT
 
     -- Funnel
     COUNT(DISTINCT pu.UserId)                                               AS assigned,
-    COUNT(DISTINCT CASE WHEN pu.UserIsOptIn = true  THEN pu.UserId END)     AS opted_in,
-    COUNT(DISTINCT v.IssuedToUserId)                                        AS won,
-    COUNT(DISTINCT CASE WHEN v.RedeemedOnUTC IS NOT NULL
-                        THEN v.IssuedToUserId END)                          AS redeemed,
+    COUNT(DISTINCT CASE WHEN pu.OptInDateTimeUtc IS NOT NULL
+                        THEN pu.UserId END)                                 AS opted_in,
+    COUNT(v.IssuedToUserId)                                                 AS won,
+    COUNT(CASE WHEN v.RedeemedOnUTC IS NOT NULL
+               THEN v.IssuedToUserId END)                                   AS redeemed,
 
     -- Tasas de conversión
     ROUND(
-        COUNT(DISTINCT CASE WHEN pu.UserIsOptIn = true THEN pu.UserId END)
+        COUNT(DISTINCT CASE WHEN pu.OptInDateTimeUtc IS NOT NULL
+                            THEN pu.UserId END)
         / NULLIF(COUNT(DISTINCT pu.UserId), 0) * 100, 1
     )                                                                       AS optin_rate_pct,
     ROUND(
-        COUNT(DISTINCT v.IssuedToUserId)
-        / NULLIF(COUNT(DISTINCT CASE WHEN pu.UserIsOptIn = true
+        COUNT(v.IssuedToUserId)
+        / NULLIF(COUNT(DISTINCT CASE WHEN pu.OptInDateTimeUtc IS NOT NULL
                                      THEN pu.UserId END), 0) * 100, 1
     )                                                                       AS win_rate_pct,
     ROUND(
-        COUNT(DISTINCT CASE WHEN v.RedeemedOnUTC IS NOT NULL
-                            THEN v.IssuedToUserId END)
-        / NULLIF(COUNT(DISTINCT v.IssuedToUserId), 0) * 100, 1
+        COUNT(CASE WHEN v.RedeemedOnUTC IS NOT NULL THEN v.IssuedToUserId END)
+        / NULLIF(COUNT(v.IssuedToUserId), 0) * 100, 1
     )                                                                       AS redeem_rate_pct
 
 FROM promotion_user  pu
