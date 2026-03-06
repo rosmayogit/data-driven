@@ -1,14 +1,14 @@
 -- ============================================================================
--- PROMOTION USER STATS: Asignados, Opt-in, Ganadores y Redimidos por Promoción
+-- PROMOTION USER STATS: Asignados, Apostadores, Ganadores y Redimidos
 -- ============================================================================
 -- Joins promotion_user con hive_metastore.db_silver_voucher.eventsmaster
--- para obtener el funnel completo por promoción.
+-- para obtener el funnel completo por promoción (usuarios únicos).
 --
 -- Métricas:
---   assigned  → usuarios asignados a la promo (en promotion_user)
---   opted_in  → usuarios que hicieron opt-in
---   won       → usuarios a quienes se emitió un voucher (IssuedOnUTC IS NOT NULL)
---   redeemed  → usuarios que redimieron el voucher (RedeemedOnUTC IS NOT NULL)
+--   assigned  → usuarios únicos asignados a la promo
+--   wagered   → usuarios únicos que han realizado al menos una apuesta (ConfirmedBetsPlaced > 0)
+--   won       → usuarios únicos a quienes se emitió al menos un voucher
+--   redeemed  → usuarios únicos que redimieron al menos un voucher
 -- ============================================================================
 
 WITH voucher AS (
@@ -19,6 +19,17 @@ WITH voucher AS (
         RedeemedOnUTC
     FROM hive_metastore.db_silver_voucher.eventsmaster
     WHERE row_valid_to_ts IS NULL   -- solo registro vigente (SCD2)
+),
+
+voucher_agg AS (
+    SELECT
+        CampaignId,
+        IssuedToUserId,
+        COUNT(*)                                        AS total_vouchers,
+        COUNT(CASE WHEN RedeemedOnUTC IS NOT NULL
+                   THEN 1 END)                          AS redeemed_vouchers
+    FROM voucher
+    GROUP BY CampaignId, IssuedToUserId
 )
 
 SELECT
@@ -27,27 +38,28 @@ SELECT
     pd.PromotionKey,
     pd.BrandId,
 
-    -- Funnel
+    -- Funnel (usuarios únicos)
     COUNT(DISTINCT pu.UserId)                                               AS assigned,
-    COUNT(DISTINCT CASE WHEN pu.OptInDateTimeUtc IS NOT NULL
-                        THEN pu.UserId END)                                 AS opted_in,
-    COUNT(v.IssuedToUserId)                                                 AS won,
-    COUNT(CASE WHEN v.RedeemedOnUTC IS NOT NULL
-               THEN v.IssuedToUserId END)                                   AS redeemed,
+    COUNT(DISTINCT CASE WHEN pu.ConfirmedBetsPlaced > 0
+                        THEN pu.UserId END)                                 AS wagered,
+    COUNT(DISTINCT v.IssuedToUserId)                                        AS won,
+    COUNT(DISTINCT CASE WHEN v.redeemed_vouchers > 0
+                        THEN v.IssuedToUserId END)                          AS redeemed,
 
     -- Tasas de conversión
     ROUND(
-        COUNT(DISTINCT CASE WHEN pu.OptInDateTimeUtc IS NOT NULL
+        COUNT(DISTINCT CASE WHEN pu.ConfirmedBetsPlaced > 0
                             THEN pu.UserId END)
         / NULLIF(COUNT(DISTINCT pu.UserId), 0) * 100, 1
-    )                                                                       AS optin_rate_pct,
+    )                                                                       AS wagered_rate_pct,
     ROUND(
-        COUNT(v.IssuedToUserId)
+        COUNT(DISTINCT v.IssuedToUserId)
         / NULLIF(COUNT(DISTINCT pu.UserId), 0) * 100, 1
     )                                                                       AS win_rate_pct,
     ROUND(
-        COUNT(CASE WHEN v.RedeemedOnUTC IS NOT NULL THEN v.IssuedToUserId END)
-        / NULLIF(COUNT(v.IssuedToUserId), 0) * 100, 1
+        COUNT(DISTINCT CASE WHEN v.redeemed_vouchers > 0
+                            THEN v.IssuedToUserId END)
+        / NULLIF(COUNT(DISTINCT v.IssuedToUserId), 0) * 100, 1
     )                                                                       AS redeem_rate_pct
 
 FROM promotion_user  pu
@@ -55,7 +67,7 @@ FROM promotion_user  pu
 INNER JOIN promotion_detail  pd
     ON pd.PromotionId = pu.PromotionId
 
-LEFT JOIN voucher  v
+LEFT JOIN voucher_agg  v
     ON  v.CampaignId     = pu.PromotionId
     AND v.IssuedToUserId = pu.UserId
 
