@@ -63,6 +63,7 @@ SELECT
     )                                                                       AS redeem_rate_pct
 
 FROM promotion_user  pu
+WHERE pu.PromotionId IN (1037, 1038, 1039, 1040, 1041)
 
 INNER JOIN promotion_detail  pd
     ON pd.PromotionId = pu.PromotionId
