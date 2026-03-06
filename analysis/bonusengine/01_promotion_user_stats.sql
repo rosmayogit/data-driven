@@ -53,7 +53,8 @@ SELECT
     )                                                                       AS wagered_rate_pct,
     ROUND(
         COUNT(DISTINCT v.IssuedToUserId)
-        / NULLIF(COUNT(DISTINCT pu.UserId), 0) * 100, 1
+        / NULLIF(COUNT(DISTINCT CASE WHEN pu.ConfirmedGrossAmountStaked > 0
+                                     THEN pu.UserId END), 0) * 100, 1
     )                                                                       AS win_rate_pct,
     ROUND(
         COUNT(DISTINCT CASE WHEN v.redeemed_vouchers > 0
