@@ -1,0 +1,113 @@
+[
+  {
+    "id": "RW-10000",
+    "name": "Nigeria Welcome Free Bet",
+    "description": "Bienvenida para nuevos usuarios de Nigeria con free bet de €10 en su primer depósito.",
+    "type": "FreeBet",
+    "status": "Active",
+    "amount": { "mode": "Fixed", "value": "10 EUR" },
+    "issued": 1842,
+    "redeemed": 1104,
+    "active": 738,
+    "expired": 215,
+    "redemptionRate": 59.9,
+    "roi": 1.6,
+    "createdAt": "2026-01-15",
+    "country": "NG",
+    "campaignType": "simple",
+    "requiresOptIn": true,
+    "startDate": "2026-01-15",
+    "endDate": "2026-04-15",
+    "metrics": [
+      { "title": "Assigned Users", "value": "2,400" },
+      { "title": "Opted In", "value": "2,105" },
+      { "title": "Participating", "value": "1,842" },
+      { "title": "Rewarded", "value": "1,842" },
+      { "title": "Redeemed", "value": "1,104" },
+      { "title": "Redemption Rate", "value": "59.9%" },
+      { "title": "Total Stake", "value": "€18,420" },
+      { "title": "Avg Bets/User", "value": "3.2" }
+    ],
+    "funnel": [
+      { "label": "Assigned", "count": 2400 },
+      { "label": "Opted In", "count": 2105 },
+      { "label": "Participating", "count": 1842 },
+      { "label": "Rewarded", "count": 1842 },
+      { "label": "Redeemed", "count": 1104 }
+    ]
+  },
+  {
+    "id": "RW-10001",
+    "name": "SA Weekend Free Spins Promo",
+    "description": "Campaña de fin de semana para usuarios de Sudáfrica con 50 free spins en slots seleccionados.",
+    "type": "FreeSpin",
+    "status": "Active",
+    "amount": { "mode": "Fixed", "value": "50 spins" },
+    "issued": 3210,
+    "redeemed": 2567,
+    "active": 643,
+    "expired": 410,
+    "redemptionRate": 79.9,
+    "roi": 1.8,
+    "createdAt": "2026-02-01",
+    "country": "SA",
+    "campaignType": "triggered",
+    "requiresOptIn": false,
+    "startDate": "2026-02-01",
+    "endDate": "2026-03-31",
+    "metrics": [
+      { "title": "Assigned Users", "value": "4,000" },
+      { "title": "Opted In", "value": "3,800" },
+      { "title": "Participating", "value": "3,210" },
+      { "title": "Rewarded", "value": "3,210" },
+      { "title": "Redeemed", "value": "2,567" },
+      { "title": "Redemption Rate", "value": "79.9%" },
+      { "title": "Total Stake", "value": "€32,100" },
+      { "title": "Avg Bets/User", "value": "5.7" }
+    ],
+    "funnel": [
+      { "label": "Assigned", "count": 4000 },
+      { "label": "Opted In", "count": 3800 },
+      { "label": "Participating", "count": 3210 },
+      { "label": "Rewarded", "count": 3210 },
+      { "label": "Redeemed", "count": 2567 }
+    ]
+  },
+  {
+    "id": "RW-10002",
+    "name": "Zambia Bet & Get Cash Bonus",
+    "description": "Apuesta €5 o más y recibe €2 en efectivo retirable. Campaña para usuarios activos de Zambia.",
+    "type": "Cash",
+    "status": "Paused",
+    "amount": { "mode": "Fixed", "value": "2 EUR" },
+    "issued": 987,
+    "redeemed": 512,
+    "active": 0,
+    "expired": 475,
+    "redemptionRate": 51.9,
+    "roi": 1.5,
+    "createdAt": "2026-01-10",
+    "country": "ZM",
+    "campaignType": "bet-and-get",
+    "requiresOptIn": false,
+    "startDate": "2026-01-10",
+    "endDate": "2026-02-28",
+    "metrics": [
+      { "title": "Assigned Users", "value": "1,200" },
+      { "title": "Opted In", "value": "1,100" },
+      { "title": "Participating", "value": "987" },
+      { "title": "Rewarded", "value": "987" },
+      { "title": "Redeemed", "value": "512" },
+      { "title": "Redemption Rate", "value": "51.9%" },
+      { "title": "Total Stake", "value": "€9,870" },
+      { "title": "Avg Bets/User", "value": "2.8" }
+    ],
+    "funnel": [
+      { "label": "Assigned", "count": 1200 },
+      { "label": "Opted In", "count": 1100 },
+      { "label": "Participating", "count": 987 },
+      { "label": "Rewarded", "count": 987 },
+      { "label": "Redeemed", "count": 512 }
+    ]
+  }
+]

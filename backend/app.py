@@ -269,6 +269,23 @@ def campaigns():
 @app.route("/api/campaigns/<campaign_id>")
 def campaign_detail(campaign_id):
     """Single campaign detail with metrics and funnel."""
+    # Check custom campaigns first
+    custom = _load_custom_campaigns()
+    for c in custom:
+        if c["id"] == campaign_id:
+            return jsonify({
+                "id": c["id"],
+                "name": c["name"],
+                "description": c.get("description", ""),
+                "type": c["type"],
+                "status": c["status"],
+                "amount": c["amount"].get("value", "N/A") if isinstance(c["amount"], dict) else c["amount"],
+                "startDate": c.get("startDate", c.get("createdAt", "")),
+                "endDate": c.get("endDate", ""),
+                "metrics": c.get("metrics", []),
+                "funnel": c.get("funnel", []),
+            })
+
     # Extract numeric ID from "RW-0001" format
     try:
         pid = int(campaign_id.replace("RW-", ""))
