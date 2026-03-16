@@ -15,13 +15,10 @@
 -- MAGIC %md
 -- MAGIC ## ⚙️ Configuración
 -- MAGIC
--- MAGIC Ajusta los parámetros antes de ejecutar.
-
--- COMMAND ----------
-
-SET PROMOTION_ID  = 951;
-SET START_DATE    = '2025-01-01';   -- Fecha inicio del análisis
-SET END_DATE      = '2026-03-16';   -- Fecha fin del análisis
+-- MAGIC Cambia los valores directamente en las queries si necesitas otro período o promoción.
+-- MAGIC - **PROMOTION_ID**: 951
+-- MAGIC - **START_DATE**: 2025-01-01
+-- MAGIC - **END_DATE**: 2026-03-16
 
 -- COMMAND ----------
 
@@ -40,7 +37,7 @@ SELECT
 FROM hive_metastore.db_bronze_tps.users_user u
 INNER JOIN hive_metastore.db_bronze_tps.users_userdetail ud
   ON ud.UserId = u.id
-WHERE CAST(u.RegistrationDate AS DATE) BETWEEN '${START_DATE}' AND '${END_DATE}';
+WHERE CAST(u.RegistrationDate AS DATE) BETWEEN '2025-01-01' AND '2026-03-16';
 
 -- Resumen diario de registros
 SELECT
@@ -57,7 +54,7 @@ ORDER BY RegistrationDate;
 -- MAGIC ## Paso 2 — Reward Credited
 -- MAGIC
 -- MAGIC Usuarios registrados que recibieron el reward de la oferta de bienvenida
--- MAGIC (PromotionId = ${PROMOTION_ID}).
+-- MAGIC (PromotionId = 951).
 -- MAGIC
 -- MAGIC > **TODO:** Confirma el catálogo/schema de `promotion_detail` y `promotion_user`.
 -- MAGIC > Por defecto se asume el mismo que las tablas de usuarios. Ajusta si es diferente.
@@ -84,7 +81,7 @@ FROM
   --   ON  vc.<VOUCHER_USER_ID>       = pu.UserId
   --   AND vc.<VOUCHER_PROMOTION_ID>  = pu.PromotionId
 WHERE
-  pd.PromotionId = ${PROMOTION_ID}
+  pd.PromotionId = 951
   -- Filtrar solo usuarios que se registraron en el período
   AND pu.UserId IN (SELECT UserId FROM v_wo_step1_registrations);
 
@@ -116,7 +113,7 @@ FROM
   --   AND vc.<VOUCHER_PROMOTION_ID> = pu.PromotionId
   -- WHERE vc.<VOUCHER_REDEEMED_DATE> IS NOT NULL  -- solo canjeados
 WHERE
-  pu.PromotionId = ${PROMOTION_ID}
+  pu.PromotionId = 951
   AND pu.UserId IN (SELECT UserId FROM v_wo_step2_credited);
   -- NOTA: mientras no esté la tabla de vouchers, este paso devuelve los mismos que step2.
   -- Activa el filtro de redención cuando conectes la tabla.
