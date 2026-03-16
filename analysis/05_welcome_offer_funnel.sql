@@ -18,5 +18,7 @@ LEFT JOIN (
   ON CAST(ev.IssuedToUserId AS STRING) = CAST(u.id AS STRING)
 WHERE u.BrandId = 1901
   AND CAST(u.RegistrationDate AS DATE) >= '2025-02-02'
+  AND u.IsTest = False
+  AND u.UserTypeId = 2
 GROUP BY CAST(u.RegistrationDate AS DATE)
 ORDER BY fecha;
