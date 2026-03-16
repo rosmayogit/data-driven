@@ -12,7 +12,7 @@ FROM hive_metastore.db_bronze_tps.users_user u
 INNER JOIN hive_metastore.db_bronze_tps.users_userdetail ud
   ON ud.UserId = u.id
 LEFT JOIN db_silver_voucher.eventsmaster ev
-  ON  ev.IssuedToUserId = u.id
-  AND ev.CampaignId     = 951
+  ON  CAST(ev.IssuedToUserId AS STRING) = CAST(u.id AS STRING)
+  AND ev.CampaignId = 951
 GROUP BY CAST(u.RegistrationDate AS DATE)
 ORDER BY fecha;
